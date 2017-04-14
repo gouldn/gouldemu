@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "registers.h"
 #include "cpu.h"
@@ -280,17 +281,15 @@ int main(int argc, char** argv) {
 		
 	FILE *f = fopen(argv[1], "rb");
 
-	fseek(f, 0, SEEK_END);
-	long size = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	memset(cartridge, 0, sizeof(cartridge));
 
-	fread(cartridge, 1, size, f);
+	fread(cartridge, 1, sizeof(cartridge), f);
 
 	fclose(f);
 
 	setRegisterDefaults();
 
-	unsigned short operands = 0;
+	WORD operands = 0;
 	registers.pc = 0x0100;
 	struct instruction currentInstruction;
 
@@ -300,9 +299,11 @@ int main(int argc, char** argv) {
 
 		printf("%s\n", currentInstruction.disassembly);
 
-		if(currentInstruction.operandLength == 1) { operands = (unsigned short)cartridge[registers.pc]; }
+		if(currentInstruction.operandLength == 1) { operands = (WORD)cartridge[registers.pc]; }
 		else if(currentInstruction.operandLength == 2) { operands = cartridge[registers.pc] | (cartridge[registers.pc + 1] << 8); }
 		registers.pc += currentInstruction.operandLength;
+
+		getchar();
 
 
 		switch(currentInstruction.operandLength) {
@@ -337,9 +338,9 @@ void undefined() {
 
 void nop() { }
 
-void jp(unsigned short operand) { registers.pc = operand; }
+void jp(WORD operand) { registers.pc = operand; }
 
-void xor(unsigned char operand) { 
+void xor(BYTE operand) { 
 
 	registers.a ^= operand;
 	if(operand == 0)
@@ -349,33 +350,35 @@ void xor(unsigned char operand) {
 	CLEAR(FLAGN | FLAGC | FLAGH);
 }
 
-void dec(unsigned char operand) {
+BYTE dec(BYTE operand) {
 
 	operand--;
 
-	if(registers.b) SET(FLAGZ);
+	if(!operand) SET(FLAGZ);
 	else CLEAR(FLAGZ);
+
+	return operand;
 }
 
 void xor_a() { xor(registers.a); }
 
-void ldhl_nn(unsigned short operand) { registers.hl = operand; }
+void ldhl_nn(WORD operand) { registers.hl = operand; }
 
-void ldc_n(unsigned char operand) { registers.c = operand; }
+void ldc_n(BYTE operand) { registers.c = operand; }
 
-void ldb_n(unsigned char operand) { registers.b = operand; }
+void ldb_n(BYTE operand) { registers.b = operand; }
 
-void lda_n(unsigned char operand) { registers.a = operand; }
+void lda_n(BYTE operand) { registers.a = operand; }
 
-void ldd_phl_a() { writeByte(registers.hl, registers.a); }
+void ldd_phl_a() { writeByte(registers.hl--, registers.a); }
 
-void dec_b() { dec(registers.b); }
+void dec_b() { registers.b = dec(registers.b); }
 
-void dec_c() { dec(registers.c); }
+void dec_c() { registers.c = dec(registers.c); }
 
-void jr_nz_n(unsigned char operand) {
-	if(ISSET(FLAGZ))
-		registers.pc += (signed char)operand;
+void jr_nz_n(BYTE operand) {
+	if(!ISSET(FLAGZ))
+		registers.pc += (SIGNED_BYTE)operand;
 }
 
 void di() { registers.ie = 0; }

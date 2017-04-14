@@ -1,45 +1,47 @@
+#include "types.h"
+
 struct registers {
 	struct {
 		union {
 			struct {
-				unsigned char f;
-				unsigned char a;
+				BYTE f;
+				BYTE a;
 			};
-			unsigned short af;
+			WORD af;
 		};
 	};
 	
 	struct {
 		union {
 			struct {
-				unsigned char c;
-				unsigned char b;
+				BYTE c;
+				BYTE b;
 			};
-			unsigned short bc;
+			WORD bc;
 		};
 	};
 	
 	struct {
 		union {
 			struct {
-				unsigned char e;
-				unsigned char d;
+				BYTE e;
+				BYTE d;
 			};
-			unsigned short de;
+			WORD de;
 		};
 	};
 	
 	struct {
 		union {
 			struct {
-				unsigned char l;
-				unsigned char h;
+				BYTE l;
+				BYTE h;
 			};
-			unsigned short hl;
+			WORD hl;
 		};
 	};
 	
-	unsigned short sp;
-	unsigned short pc;
-	unsigned char ie;
+	WORD sp;
+	WORD pc;
+	BYTE ie;
 } extern registers;
