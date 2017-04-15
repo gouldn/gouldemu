@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
+#include <GL/freeglut.h>
+#include <GL/glu.h>
 
 #include "registers.h"
 #include "cpu.h"
 #include "memory.h"
+
+#define MAXCPU_CYCLES 66905
 
 const struct instruction instructions[256] = {
 	{ "NOP", 0, 2, nop},                           // 0x00
@@ -270,6 +274,7 @@ void setRegisterDefaults() {
 	registers.bc = 0x0013;
 	registers.de = 0x00D8;
 	registers.hl = 0x014D;
+	registers.pc = 0x0100;
 }
 
 void printRegisters() {
@@ -280,56 +285,53 @@ void printRegisters() {
 int main(int argc, char** argv) {
 		
 	FILE *f = fopen(argv[1], "rb");
-
-	memset(cartridge, 0, sizeof(cartridge));
-
-	fread(cartridge, 1, sizeof(cartridge), f);
-
-	fclose(f);
+	loadROM(f);
 
 	setRegisterDefaults();
 
-	WORD operands = 0;
-	registers.pc = 0x0100;
-	struct instruction currentInstruction;
+	const int maxCycles = 66905;
 
 	while(1) {
-		printf("PC: %x\n", registers.pc);
-		currentInstruction = instructions[cartridge[registers.pc++]];
-
-		printf("%s\n", currentInstruction.disassembly);
-
-		if(currentInstruction.operandLength == 1) { operands = (WORD)cartridge[registers.pc]; }
-		else if(currentInstruction.operandLength == 2) { operands = cartridge[registers.pc] | (cartridge[registers.pc + 1] << 8); }
-		registers.pc += currentInstruction.operandLength;
-
-		getchar();
-
-
-		switch(currentInstruction.operandLength) {
-			case 0:
-				((void (*)(void))(currentInstruction.execute))();
-				printRegisters();
-				break;
-			case 1:
-				((void (*)(unsigned char))(currentInstruction.execute))((unsigned char)operands);
-				printRegisters();
-				break;
-			case 2:
-				((void (*)(unsigned short))(currentInstruction.execute))(operands);
-				printRegisters();
-				break;
-		}
+		cpuStep();
 	}
 
 	return 0;
 
 }
 
-void undefined() {
-	struct instruction problem;
+BYTE cpuStep() {
 
-	printf("Undefined instruction: %s\n", problem.disassembly);
+		//printf("PC: %x\n", registers.pc);
+
+		//printf("%s\n", currentInstruction.disassembly);
+		WORD operands = 0;
+		struct instruction currentInstruction = instructions[cartridge[registers.pc++]];
+
+		if(currentInstruction.operandLength == 1) { operands = (WORD)cartridge[registers.pc]; }
+		else if(currentInstruction.operandLength == 2) { operands = cartridge[registers.pc] | (cartridge[registers.pc + 1] << 8); }
+		registers.pc += currentInstruction.operandLength;
+
+		//getchar();
+
+
+		switch(currentInstruction.operandLength) {
+			case 0:
+				((void (*)(void))(currentInstruction.execute))();
+				break;
+			case 1:
+				((void (*)(unsigned char))(currentInstruction.execute))((unsigned char)operands);
+				break;
+			case 2:
+				((void (*)(unsigned short))(currentInstruction.execute))(operands);
+				break;
+		}
+		//printRegisters();
+		return currentInstruction.ticks;
+}
+
+void undefined() {
+
+	printf("Undefined instruction at: %04x\n", registers.pc);
 	printRegisters();
 
 	getchar();

@@ -1,4 +1,5 @@
-#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "memory.h"
 
 BYTE cartridge[0x20000];
@@ -11,4 +12,14 @@ unsigned char writeByte(WORD address, BYTE value) {
 
 	printf("Problem writing to memory\n");
 	return 0;
+}
+
+void loadROM(FILE *f) {
+
+	memset(cartridge, 0, sizeof(cartridge));
+
+	fread(cartridge, 1, sizeof(cartridge), f);
+
+	fclose(f);
+
 }

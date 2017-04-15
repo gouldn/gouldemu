@@ -11,10 +11,14 @@
 
 struct instruction {
 	char *disassembly;
-	unsigned char operandLength;
-	unsigned char ticks;
+	BYTE operandLength;
+	BYTE ticks;
 	void *execute;
 } extern const instructions[256];
+
+
+
+BYTE cpuStep(void);
 
 void undefined(void);
 void xor(BYTE operand);
