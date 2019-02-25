@@ -1,12 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <GL/freeglut.h>
-#include <GL/glu.h>
+#include "SDL2/SDL.h"
 
 #include "registers.h"
 #include "cpu.h"
 #include "memory.h"
+#include "window.h"
 
 #define MAXCPU_CYCLES 66905
 
@@ -283,9 +282,13 @@ void printRegisters() {
 
 
 int main(int argc, char** argv) {
-		
+
 	FILE *f = fopen(argv[1], "rb");
 	loadROM(f);
+
+	if(initWindow() < 0) {
+		printf("Error while initializing SDL window: %s\n", SDL_GetError());
+	}
 
 	setRegisterDefaults();
 
@@ -301,17 +304,16 @@ int main(int argc, char** argv) {
 
 BYTE cpuStep() {
 
-		//printf("PC: %x\n", registers.pc);
-
-		//printf("%s\n", currentInstruction.disassembly);
+		printf("PC: %x\n", registers.pc);
 		WORD operands = 0;
 		struct instruction currentInstruction = instructions[cartridge[registers.pc++]];
+		printf("%s\n", currentInstruction.disassembly);
 
 		if(currentInstruction.operandLength == 1) { operands = (WORD)cartridge[registers.pc]; }
 		else if(currentInstruction.operandLength == 2) { operands = cartridge[registers.pc] | (cartridge[registers.pc + 1] << 8); }
 		registers.pc += currentInstruction.operandLength;
 
-		//getchar();
+		getchar();
 
 
 		switch(currentInstruction.operandLength) {
@@ -342,7 +344,7 @@ void nop() { }
 
 void jp(WORD operand) { registers.pc = operand; }
 
-void xor(BYTE operand) { 
+void xor(BYTE operand) {
 
 	registers.a ^= operand;
 	if(operand == 0)
