@@ -7,6 +7,8 @@
 #include "memory.h"
 #include "window.h"
 
+#define SCREEN_WIDTH 640
+#define SCREEN_HEIGHT 480
 #define MAXCPU_CYCLES 66905
 
 const struct instruction instructions[256] = {
@@ -286,9 +288,7 @@ int main(int argc, char** argv) {
 	FILE *f = fopen(argv[1], "rb");
 	loadROM(f);
 
-	if(initWindow() < 0) {
-		printf("Error while initializing SDL window: %s\n", SDL_GetError());
-	}
+	initWindow();
 
 	setRegisterDefaults();
 

@@ -33,7 +33,7 @@ int initWindow() {
 	return 0;
 }
 
-void close()
+void destroy()
 {
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
