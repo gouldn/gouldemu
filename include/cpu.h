@@ -8,6 +8,7 @@
 #define ISSET(x) (registers.f & (x))
 #define SET(x) (registers.f |= (x))
 #define CLEAR(x) (registers.f &= ~(x))
+#define SUBHALFCARRY(x, y) (((x & 0xF) + -(y & 0xF)) & 0x10)
 
 struct instruction {
 	char *disassembly;
@@ -19,6 +20,7 @@ struct instruction {
 
 
 BYTE cpuStep(void);
+void initCpu();
 
 void undefined(void);
 void xor(BYTE operand);
@@ -32,6 +34,9 @@ void ldc_n(BYTE operand);
 void ldb_n(BYTE operand);
 void lda_n(BYTE operand);
 void ldd_phl_a(void);
+void ldFF00_a(BYTE operand);
+void lda_FF00(BYTE operand);
 void dec_b(void);
 void dec_c(void);
+void cp_n(BYTE operand);
 void di(void);

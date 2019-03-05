@@ -4,5 +4,7 @@
 extern unsigned char cartridge[0x20000];
 extern unsigned char internal[0x10000];
 
-unsigned char writeByte(WORD address, BYTE value);
-void loadROM(FILE *f);
+BYTE writeByte(WORD address, BYTE value);
+BYTE readByte(WORD address);
+void initMemory(char** argv);
+//BYTE* grabVRAM();

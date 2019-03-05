@@ -5,7 +5,6 @@
 #include "registers.h"
 #include "cpu.h"
 #include "memory.h"
-#include "window.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
@@ -44,7 +43,7 @@ const struct instruction instructions[256] = {
 	{ "DEC E", 0, 2, undefined },                       // 0x1d
 	{ "LD E, 0x%02X", 1, 4, undefined },               // 0x1e
 	{ "RRA", 0, 4, undefined },                           // 0x1f
-	{ "JR NZ, 0x%02X", 1, 0, jr_nz_n },             // 0x20
+	{ "JR NZ, 0x%02X", 1, 12, jr_nz_n },             // 0x20
 	{ "LD HL, 0x%04X", 2, 6, ldhl_nn },            // 0x21
 	{ "LDI (HL), A", 0, 4, undefined },             // 0x22
 	{ "INC HL", 0, 4, undefined },                     // 0x23
@@ -203,7 +202,7 @@ const struct instruction instructions[256] = {
 	{ "CP H", 0, 2, undefined },                         // 0xbc
 	{ "CP L", 0, 2, undefined },                         // 0xbd
 	{ "CP (HL)", 0, 4, undefined },                    // 0xbe
-	{ "CP A", 0, 2, undefined },                         // 0xbf
+	{ "CP A", 0, 2, undefined},                         // 0xbf
 	{ "RET NZ", 0, 0, undefined },                     // 0xc0
 	{ "POP BC", 0, 6, undefined },                     // 0xc1
 	{ "JP NZ, 0x%04X", 2, 0, undefined },            // 0xc2
@@ -236,7 +235,7 @@ const struct instruction instructions[256] = {
 	{ "UNKNOWN", 0, 0, undefined },                 // 0xdd
 	{ "SBC 0x%02X", 1, 4, undefined },                  // 0xde
 	{ "RST 0x18", 0, 8, undefined },                   // 0xdf
-	{ "LD (0xFF00 + 0x%02X), A", 1, 6, undefined },// 0xe0
+	{ "LD (0xFF00 + 0x%02X), A", 1, 6, ldFF00_a },// 0xe0
 	{ "POP HL", 0, 6, undefined },                     // 0xe1
 	{ "LD (0xFF00 + C), A", 0, 4, undefined },      // 0xe2
 	{ "UNKNOWN", 0, 0, undefined },                 // 0xe3
@@ -252,7 +251,7 @@ const struct instruction instructions[256] = {
 	{ "UNKNOWN", 0, 0, undefined },                 // 0xed
 	{ "XOR 0x%02X", 1, 4, undefined },                  // 0xee
 	{ "RST 0x28", 0, 8, undefined },                   // 0xef
-	{ "LD A, (0xFF00 + 0x%02X)", 1, 6, undefined },// 0xf0
+	{ "LD A, (0xFF00 + 0x%02X)", 1, 12, lda_FF00 },// 0xf0
 	{ "POP AF", 0, 6, undefined },                     // 0xf1
 	{ "LD A, (0xFF00 + C)", 0, 4, undefined },      // 0xf2
 	{ "DI", 0, 2, di },                        // 0xf3
@@ -266,40 +265,21 @@ const struct instruction instructions[256] = {
 	{ "EI", 0, 2, undefined },                             // 0xfb
 	{ "UNKNOWN", 0, 0, undefined },                 // 0xfc
 	{ "UNKNOWN", 0, 0, undefined },                 // 0xfd
-	{ "CP 0x%02X", 1, 4, undefined },                    // 0xfe
+	{ "CP 0x%02X", 1, 8, cp_n },                    // 0xfe
 	{ "RST 0x38", 0, 8, undefined },                   // 0xff
 };
 
-void setRegisterDefaults() {
-	registers.af = 0x01B0;
-	registers.bc = 0x0013;
-	registers.de = 0x00D8;
-	registers.hl = 0x014D;
-	registers.pc = 0x0100;
+void initCpu() {
+		// Set register defaults
+		registers.af = 0x01B0;
+		registers.bc = 0x0013;
+		registers.de = 0x00D8;
+		registers.hl = 0x014D;
+		registers.pc = 0x0100;
 }
 
 void printRegisters() {
 	printf("Registers:\n\t AF:%04X\n\t BC:%04X\n\t DE:%04X\n\t HL:%04X\n\n", registers.af, registers.bc, registers.de, registers.hl);
-}
-
-
-int main(int argc, char** argv) {
-
-	FILE *f = fopen(argv[1], "rb");
-	loadROM(f);
-
-	initWindow();
-
-	setRegisterDefaults();
-
-	const int maxCycles = 66905;
-
-	while(1) {
-		cpuStep();
-	}
-
-	return 0;
-
 }
 
 BYTE cpuStep() {
@@ -313,38 +293,39 @@ BYTE cpuStep() {
 		else if(currentInstruction.operandLength == 2) { operands = cartridge[registers.pc] | (cartridge[registers.pc + 1] << 8); }
 		registers.pc += currentInstruction.operandLength;
 
-		getchar();
+		int ticks = 0;
 
 
 		switch(currentInstruction.operandLength) {
 			case 0:
-				((void (*)(void))(currentInstruction.execute))();
+				ticks = ((int (*)(void))(currentInstruction.execute))();
 				break;
 			case 1:
-				((void (*)(unsigned char))(currentInstruction.execute))((unsigned char)operands);
+				ticks = ((int (*)(unsigned char))(currentInstruction.execute))((unsigned char)operands);
 				break;
 			case 2:
-				((void (*)(unsigned short))(currentInstruction.execute))(operands);
+				ticks = ((int (*)(unsigned short))(currentInstruction.execute))(operands);
 				break;
 		}
-		//printRegisters();
-		return currentInstruction.ticks;
+		printRegisters();
+		getchar();
+		return ticks;
 }
 
-void undefined() {
+int undefined() {
 
 	printf("Undefined instruction at: %04x\n", registers.pc);
 	printRegisters();
 
 	getchar();
-	return;
+	return 0;
 }
 
-void nop() { }
+int nop() { }
 
-void jp(WORD operand) { registers.pc = operand; }
+int jp(WORD operand) { registers.pc = operand; }
 
-void xor(BYTE operand) {
+int xor(BYTE operand) {
 
 	registers.a ^= operand;
 	if(operand == 0)
@@ -364,25 +345,42 @@ BYTE dec(BYTE operand) {
 	return operand;
 }
 
-void xor_a() { xor(registers.a); }
+int xor_a() { xor(registers.a); }
 
-void ldhl_nn(WORD operand) { registers.hl = operand; }
+int ldhl_nn(WORD operand) { registers.hl = operand; }
 
-void ldc_n(BYTE operand) { registers.c = operand; }
+int ldc_n(BYTE operand) { registers.c = operand; }
 
-void ldb_n(BYTE operand) { registers.b = operand; }
+int ldb_n(BYTE operand) { registers.b = operand; }
 
-void lda_n(BYTE operand) { registers.a = operand; }
+int lda_n(BYTE operand) { registers.a = operand; }
 
-void ldd_phl_a() { writeByte(registers.hl--, registers.a); }
+int ldd_phl_a() { writeByte(registers.hl--, registers.a); }
 
-void dec_b() { registers.b = dec(registers.b); }
+int dec_b() { registers.b = dec(registers.b); }
 
-void dec_c() { registers.c = dec(registers.c); }
+int dec_c() { registers.c = dec(registers.c); }
 
-void jr_nz_n(BYTE operand) {
+int jr_nz_n(BYTE operand) {
 	if(!ISSET(FLAGZ))
 		registers.pc += (SIGNED_BYTE)operand;
 }
 
-void di() { registers.ie = 0; }
+int di() { registers.ie = 0; }
+
+int ldFF00_a(BYTE operand) { writeByte(0xFF00 + operand, registers.a);}
+
+int lda_FF00(BYTE operand) { registers.a = readByte(0xFF00 + operand); }
+
+int cp_n(BYTE operand) {
+	if(registers.a == operand) SET(FLAGZ);
+	else CLEAR(FLAGZ);
+
+	if(registers.a < operand) SET(FLAGC);
+	else CLEAR(FLAGC);
+
+	if(SUBHALFCARRY(registers.a, operand)) SET(FLAGH);
+	else CLEAR(FLAGH);
+
+	SET(FLAGN);
+}
