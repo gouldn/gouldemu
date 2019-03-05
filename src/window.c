@@ -19,10 +19,14 @@ int main(int argc, char** argv) {
 	initCpu();
 	initMemory(argv);
 
-	while(updateCycles < MAX_CYCLES) {
-		int cycles = cpuStep();
-		updateCycles += cycles;
-		graphicsStep(cycles);
+	while(1) {
+		while(updateCycles < MAX_CYCLES) {
+			int cycles = cpuStep();
+			updateCycles += cycles;
+			graphicsStep(cycles);
+		}
+		updateCycles = 0;
+		//Render screen
 	}
 
 	return 0;

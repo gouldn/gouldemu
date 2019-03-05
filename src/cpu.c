@@ -312,20 +312,9 @@ BYTE cpuStep() {
 		return ticks;
 }
 
-int undefined() {
-
-	printf("Undefined instruction at: %04x\n", registers.pc);
-	printRegisters();
-
-	getchar();
-	return 0;
-}
-
-int nop() { }
-
-int jp(WORD operand) { registers.pc = operand; }
-
-int xor(BYTE operand) {
+// BEGIN macro functions - these functions are re-used across opcodes that do
+// essentially the same thing
+void xor(BYTE operand) {
 
 	registers.a ^= operand;
 	if(operand == 0)
@@ -344,33 +333,86 @@ BYTE dec(BYTE operand) {
 
 	return operand;
 }
+// END macro functions
 
-int xor_a() { xor(registers.a); }
+int undefined() {
 
-int ldhl_nn(WORD operand) { registers.hl = operand; }
+	printf("Undefined instruction at: %04x\n", registers.pc);
+	printRegisters();
 
-int ldc_n(BYTE operand) { registers.c = operand; }
-
-int ldb_n(BYTE operand) { registers.b = operand; }
-
-int lda_n(BYTE operand) { registers.a = operand; }
-
-int ldd_phl_a() { writeByte(registers.hl--, registers.a); }
-
-int dec_b() { registers.b = dec(registers.b); }
-
-int dec_c() { registers.c = dec(registers.c); }
-
-int jr_nz_n(BYTE operand) {
-	if(!ISSET(FLAGZ))
-		registers.pc += (SIGNED_BYTE)operand;
+	getchar();
+	return 0;
 }
 
-int di() { registers.ie = 0; }
+int nop() { return 4;}
 
-int ldFF00_a(BYTE operand) { writeByte(0xFF00 + operand, registers.a);}
+int jp(WORD operand) {
+	registers.pc = operand;
+	return 16;
+}
 
-int lda_FF00(BYTE operand) { registers.a = readByte(0xFF00 + operand); }
+int xor_a() {
+	xor(registers.a);
+	return 4;
+}
+
+int ldhl_nn(WORD operand) {
+	registers.hl = operand;
+	return 12;
+}
+
+int ldc_n(BYTE operand) {
+	registers.c = operand;
+	return 8;
+}
+
+int ldb_n(BYTE operand) {
+	registers.b = operand;
+	return 8;
+}
+
+int lda_n(BYTE operand) {
+	registers.a = operand;
+	return 8;
+}
+
+int ldd_phl_a() {
+	writeByte(registers.hl--, registers.a);
+	return 8;
+}
+
+int dec_b() {
+	registers.b = dec(registers.b);
+	return 4;
+}
+
+int dec_c() {
+	registers.c = dec(registers.c);
+	return 4;
+}
+
+int jr_nz_n(BYTE operand) {
+	if(!ISSET(FLAGZ)) {
+		registers.pc += (SIGNED_BYTE)operand;
+		return 12;
+	}
+	else return 8;
+}
+
+int di() {
+	registers.ie = 0;
+	return 4;
+}
+
+int ldFF00_a(BYTE operand) {
+	writeByte(0xFF00 + operand, registers.a);
+	return 12;
+}
+
+int lda_FF00(BYTE operand) {
+	registers.a = readByte(0xFF00 + operand);
+	return 12;
+}
 
 int cp_n(BYTE operand) {
 	if(registers.a == operand) SET(FLAGZ);
@@ -383,4 +425,5 @@ int cp_n(BYTE operand) {
 	else CLEAR(FLAGH);
 
 	SET(FLAGN);
+	return 8;
 }

@@ -14,7 +14,7 @@ struct instruction {
 	char *disassembly;
 	BYTE operandLength;
 	BYTE ticks;
-	void *execute;
+	int *execute;
 } extern const instructions[256];
 
 
@@ -22,21 +22,23 @@ struct instruction {
 BYTE cpuStep(void);
 void initCpu();
 
-void undefined(void);
+// Macro functions
 void xor(BYTE operand);
 BYTE dec(BYTE operand);
-void nop(void);
-void jp(WORD operand);
-void jr_nz_n(BYTE operand);
-void xor_a(void);
-void ldhl_nn(WORD operand);
-void ldc_n(BYTE operand);
-void ldb_n(BYTE operand);
-void lda_n(BYTE operand);
-void ldd_phl_a(void);
-void ldFF00_a(BYTE operand);
-void lda_FF00(BYTE operand);
-void dec_b(void);
-void dec_c(void);
-void cp_n(BYTE operand);
-void di(void);
+
+int undefined(void);
+int nop(void);
+int jp(WORD operand);
+int jr_nz_n(BYTE operand);
+int xor_a(void);
+int ldhl_nn(WORD operand);
+int ldc_n(BYTE operand);
+int ldb_n(BYTE operand);
+int lda_n(BYTE operand);
+int ldd_phl_a(void);
+int ldFF00_a(BYTE operand);
+int lda_FF00(BYTE operand);
+int dec_b(void);
+int dec_c(void);
+int cp_n(BYTE operand);
+int di(void);
